@@ -16,7 +16,7 @@ import os
 import numpy as np
 from openpyxl import load_workbook
 import time
-
+import sys, os 
 
 def Name(profiles):
     
@@ -303,15 +303,6 @@ def SeriesList(data,final):
 def SwapLast(s, old, new):
     return (s[::-1].replace(old[::-1],new[::-1], 1))[::-1]
 
-def Output(data,file,sheet):
-    book = load_workbook(file)
-    book[sheet].delete_rows(1,5000)
-    
-    writer = pd.ExcelWriter(file, engine='openpyxl') 
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-    data.to_excel(writer, sheet,index=False) 
-
 def TextNumbers(string):
     
     string = string.replace('1','one')
@@ -328,19 +319,7 @@ def EliminateDoubleSpaces(swap):
         
     return swap
 
-def ExportData(table,output_file,sheetname):
-    
-    book = load_workbook(output_file)
-    book[sheetname].delete_rows(1,5000)
-    
-    writer = pd.ExcelWriter(output_file, engine='openpyxl') 
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-    table.to_excel(writer, sheetname,index=False)
-    
-    writer.save()
-
-def ImportData(inputfile,):
+def ImportData(inputfile):
     xlsx = pd.ExcelFile(inputfile)
     
     data = pd.read_excel(xlsx,"data")
@@ -351,6 +330,19 @@ def ImportData(inputfile,):
     
     return profiles,data
 
+def ExportData(table,output_file,sheetname):
+    book = load_workbook(output_file)
+    book[sheetname].delete_rows(1,2000)
+    
+    writer = pd.ExcelWriter(output_file, engine='openpyxl') 
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    table.to_excel(writer, sheetname,index=False)
+    
+    writer.save()
+
+    
+    
 def SwapCodes(inputfile,outputfile,outputfields):
     
     profiles, data = ImportData(inputfile)
@@ -374,19 +366,31 @@ def SwapCodes(inputfile,outputfile,outputfields):
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<lb>","\n")   
         profiles.loc[i,"output"] = EliminateDoubleSpaces(currentprofile["output"])
         
-    ExportData(profiles[outputfields],outputfile,'output')       
+    ExportData(profiles[outputfields],outputfile,'output')    
+
     return profiles[outputfields]
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 print("started")
 start_time = time.time()
 
-inputfile="raw data.xlsx"
-outputfile = 'output2.xlsx'
+inputfile = resource_path('rawdata.xlsx')
+outputfile = resource_path('output2.xlsx')
+
+
 outputfields = ['Prog_AWIN_Acct_ID','Prog_FullName','Prog_Cat','output']
 
 output = SwapCodes(inputfile,outputfile,outputfields)
 outputcheck = output[['output','Prog_FullName']]
- 
 
 
-print("V2: --- %s seconds ---" % (time.time() - start_time))
+print(" --- %s seconds ---" % (time.time() - start_time))
