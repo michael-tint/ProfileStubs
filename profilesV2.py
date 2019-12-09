@@ -100,19 +100,33 @@ def Operators(data):
         
     return swap
 
+
+def ISFNumber(data):
+    isf = sum(data['Current Fleet'])
+    return isf
+
+def OrdersNumber(data):
+    
+    ordersdata = data[data["Entry type"]=="New Build"]
+    ordersdata = ordersdata[ordersdata["Entry certainty"].isin(["Contracted","Long Lead"])]
+    
+    try:    
+        orders = sum(ordersdata['Total_Deliveries_Y0toY10'])
+    except KeyError:
+        orders = 0 
+        
+    return orders
+
 def ServiceOrOrder(data):
     
-    isf = sum(data['Current Fleet'])
-    
+    isf = ISFNumber(data)
+    orders = OrdersNumber(data)
+
     try:
         uncertainisf = len(data[data['QuestionableNbr']=="X"])
     except KeyError:
         uncertainisf = 0
     
-    try:    
-        orders = sum(data['Total_Deliveries_Y0toY10'])
-    except KeyError:
-        orders = 0
 
     if uncertainisf > 0:
         swap = " in military service or on order in "     
@@ -149,17 +163,15 @@ def Countries(data):
 
 def ISFandOrders(profiles,data):
  
-    isf = sum(data['Current Fleet'])
+    isf = ISFNumber(data)
+    orders = OrdersNumber(data)
     
     try:
         uncertainisf = len(data[data['QuestionableNbr']=="X"])
     except KeyError:
         uncertainisf = 0
     
-    try:    
-        orders = sum(data['Total_Deliveries_Y0toY10'])
-    except KeyError:
-        orders = 0
+  
     
     swap = " As of December 2019,"
     
@@ -309,7 +321,9 @@ def TextNumbers(string):
     string = string.replace('2','two')
     string = string.replace('3','three')
     string = string.replace('4','four')
-       
+    string = string.replace('6','six')
+    string = string.replace('8','eight')
+    
     return string
 
 def EliminateDoubleSpaces(swap):
@@ -339,9 +353,7 @@ def ExportData(table,output_file,sheetname):
     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
     table.to_excel(writer, sheetname,index=False)
     
-    writer.save()
-
-    
+    writer.save()    
     
 def SwapCodes(inputfile,outputfile,outputfields):
     
@@ -358,19 +370,22 @@ def SwapCodes(inputfile,outputfile,outputfields):
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<serviceororder>",ServiceOrOrder(currentdata))    
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<countries>",Countries(currentdata))
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<allengines>",AllEngines(currentprofile,currentdata))   
-        profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<ISFandOrders>",ISFandOrders(currentprofile,currentdata))  
+        profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<isfandorders>",ISFandOrders(currentprofile,currentdata))  
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<operators>",Operators(currentdata)) 
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<typecount>",TypeCount(currentprofile,currentdata)) 
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<typelist>",TypeList(currentprofile,currentdata)) 
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<otherprofiles>",OtherProfiles(profiles[profiles['Family'] == currentprofile["Family"]],currentprofile['Prog_Name']))  
+        profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<isf>",str(ISFNumber(currentdata)))   
+        profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<orders>",str(OrdersNumber(currentdata)))
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<lb>","\n")   
+
         profiles.loc[i,"output"] = EliminateDoubleSpaces(currentprofile["output"])
         
     ExportData(profiles[outputfields],outputfile,'output')    
 
     return profiles[outputfields]
 
-def resource_path(relative_path):
+def ResourcePath(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -383,14 +398,13 @@ def resource_path(relative_path):
 print("started")
 start_time = time.time()
 
-inputfile = resource_path('rawdata.xlsx')
-outputfile = resource_path('output2.xlsx')
+inputfile = ResourcePath('rawdata.xlsx')
+outputfile = ResourcePath('output2.xlsx')
 
 
 outputfields = ['Prog_AWIN_Acct_ID','Prog_FullName','Prog_Cat','output']
 
 output = SwapCodes(inputfile,outputfile,outputfields)
 outputcheck = output[['output','Prog_FullName']]
-
 
 print(" --- %s seconds ---" % (time.time() - start_time))
