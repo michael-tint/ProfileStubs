@@ -366,7 +366,7 @@ def SwapCodes(inputfile,outputfile,outputfields):
         profiles.loc[i,"output"] = profiles.loc[i,"output"].replace("<lb>","\n")   
         profiles.loc[i,"output"] = EliminateDoubleSpaces(currentprofile["output"])
         
-    ExportData(profiles[outputfields],outputfile,'Sheet1')    
+    ExportData(profiles[outputfields],outputfile,'output')    
 
     return profiles[outputfields]
 
@@ -384,16 +384,13 @@ print("started")
 start_time = time.time()
 
 inputfile = resource_path('rawdata.xlsx')
-outputfile = resource_path('output.xlsx')
+outputfile = resource_path('output2.xlsx')
 
 
 outputfields = ['Prog_AWIN_Acct_ID','Prog_FullName','Prog_Cat','output']
 
 output = SwapCodes(inputfile,outputfile,outputfields)
 outputcheck = output[['output','Prog_FullName']]
-
-
-
 
 
 print(" --- %s seconds ---" % (time.time() - start_time))
